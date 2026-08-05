@@ -1,0 +1,38 @@
+# QIAseq 16S/ITS Screening Panel -- region definitions
+#
+# PRIMER PROVENANCE
+#   fwd_seq / rev_seq are the PHASE-0 (core) primers extracted from QIAGEN's own
+#   demultiplexer primer file:
+#       16S_primers_ScreeningPanel_Demultiplex_Final.txt.expanded
+#   shipped inside the official docker image qiaseq/qiaseq-16s (see reference/ and
+#   README "Primer provenance"). That file lists all 12 phase variants (0-11) of
+#   every primer with degenerate bases pre-expanded; we collapsed the expansions
+#   back to IUPAC and kept phase 0. Phase N is simply N extra bases prepended to
+#   the phase-0 sequence, so an UNANCHORED cutadapt 5' match against phase 0
+#   removes the phasing bases and the primer in one step, for all 12 phases.
+#
+# amplicon_bp  approximate full amplicon length incl. primers (E. coli 16S numbering);
+#              NA for ITS1, which is genuinely variable (~230-450 bp).
+#
+# trunclenf/trunclenr  DADA2 truncation, passed to ampliseq --trunclenf/--trunclenr.
+#              Sized for this run's 2x276 bp reads. Budget per read is
+#              276 - 11 (max phasing) - primer_len, and trunclenf+trunclenr must
+#              exceed the primer-to-primer insert by >=20 bp for DADA2 to merge.
+#              Use the literal value "auto" to let ampliseq pick by quality
+#              (--trunc_qmin) instead of a fixed length.
+#              >>> These are starting values. After the first run, check
+#              <region>/dada2/QC/*.pdf and overall_summary.tsv and retune. <<<
+#
+# ref_taxonomy      value for ampliseq --dada_ref_taxonomy
+# trim_readthrough  yes = extra cutadapt pass removing the 3' opposite primer
+#                   (only needed when the amplicon is shorter than the read)
+# extra_args        extra ampliseq flags for this region ("-" for none)
+#
+region	fwd_name	fwd_seq	rev_name	rev_seq	amplicon_bp	trunclenf	trunclenr	ref_taxonomy	trim_readthrough	extra_args
+V1V2	27Fmod	AGRGTTTGATYMTGGCTC	BSR357	CTGCTGCCTYCCGTA	331	210	185	silva	no	-
+V2V3	F101mod	GGCGNACGGGTGAGTAA	518R	WTTACCGCGGCTGCTGG	418	225	200	silva	no	-
+V3V4	357F	CCTACGGGNGGCWGCAG	IllR805	GACTACHVGGGTATCTAATCC	449	235	215	silva	no	-
+V4V5	515F	GTGYCAGCMGCCGCGGTAA	926R	CCGYCAATTNMTTTRAGTTT	412	225	200	silva	no	-
+V5V7	785F	GGATTAGATACCCBRGTAGTC	1175R	ACGTCRTCCCCDCCTTCCTC	391	220	195	silva	no	-
+V7V9	P699D	YAACGAGCGMRACCC	1492R	TACGGYTACCTTGTTANGACTT	393	225	195	silva	no	-
+ITS	ITS1f	CTTGGTCATTTAGAGGAAGTAA	ITS2	GCTGCGTTCTTCATCGATGC	NA	auto	auto	unite-fungi	yes	--illumina_pe_its

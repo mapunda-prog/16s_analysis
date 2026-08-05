@@ -1,0 +1,23 @@
+# Shared nf-core/ampliseq parameters, applied to every region by
+# scripts/03_run_ampliseq.sh via -params-file.
+#
+# Do NOT set input / outdir / skip_cutadapt / trunclenf / trunclenr /
+# dada_ref_taxonomy here -- step 03 sets those per region and Nextflow will
+# reject the duplication.
+
+# Primers are already removed in step 01, so DADA2 sees primer-free reads.
+# Reads shorter than this after filtering are dropped.
+min_len_asv: 100
+
+# Diversity analyses need a metadata sheet; enable them once you supply one via
+# --extra "--metadata config/metadata.tsv".
+skip_alpha_rarefaction: true
+skip_diversity_indices: true
+
+# Keep the ASV-level outputs that step 04 compiles across regions.
+skip_barrnap: false
+
+# Uncomment to cap resources on a shared server.
+# max_cpus: 16
+# max_memory: '64.GB'
+# max_time: '48.h'

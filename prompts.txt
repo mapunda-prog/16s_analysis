@@ -1,0 +1,1 @@
+I am prepararing 16s analysis, the samples were sequenced using QIAseq 16S/ITS kit, I want to prepare scripts that I will use to 1. demultplex the reads according to primer regions (7 regions sequenced) 2. make sample shheet for each region 3. a script to run in each prime region and run NF-core ampliseq pipeline for each 4. compile results from each region
