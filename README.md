@@ -198,7 +198,22 @@ already removed the primers.
 `--continue-on-error` finishes the remaining regions and reports failures at the
 end instead of stopping at the first one.
 
-To add metadata-driven diversity analysis:
+To add metadata-driven diversity analysis, first regenerate `config/metadata.tsv`
+from the clinical `.dta` files (needs pandas; run locally, then commit the
+result) and confirm it actually covers every sample that's about to be run:
+
+```bash
+python3 scripts/build_metadata.py
+python3 scripts/check_metadata.py    # fails if a real sample has no metadata row
+```
+
+`check_metadata.py` compares `config/metadata.tsv` against the per-region
+samplesheets from step 2. QIIME2's diversity plugins silently drop or error on
+any sample missing from the metadata file, so this is meant to catch a gap
+before a multi-hour ampliseq run rather than after. A sample already listed in
+`samplesheets/excluded_samples.tsv` (dropped for low reads) is not flagged.
+
+Then:
 
 ```bash
 scripts/03_run_ampliseq.sh --all --extra "--metadata config/metadata.tsv"

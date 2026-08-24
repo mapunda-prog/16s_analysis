@@ -201,6 +201,8 @@ in the README shows the arithmetic.
 | Keep low-read samples | `--min-reads 0` in step 2 |
 | See commands without running | add `--dry-run` to step 3 |
 | Rerun one region | `scripts/03_run_ampliseq.sh V3V4` |
+| Rebuild metadata.tsv from the AFI/ARI .dta files | `python3 scripts/build_metadata.py` |
+| Check metadata covers every sample before running diversity | `python3 scripts/check_metadata.py` |
 | Add diversity analysis | `scripts/03_run_ampliseq.sh --all --extra "--metadata config/metadata.tsv"` |
 | Bacteria only (drop host/mito) | add `--extra "--filter_ssu bac"` to step 3 |
 
