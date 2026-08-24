@@ -2,7 +2,7 @@
 
 One page, in order. Full detail and troubleshooting live in [README.md](README.md).
 
-**The flow:** `probe → demux → samplesheets → ampliseq → compile`
+**The flow:** `check env → probe → demux → samplesheets → ampliseq → compile`
 
 ---
 
@@ -18,9 +18,22 @@ cd /tank/lmapunda/ARI/16s/Run_20072026
 # 3. point Singularity at the shared image cache (avoids re-downloading images)
 export NXF_SINGULARITY_CACHEDIR=/tank/lmapunda/ARI/work/singularity/
 
-# 4. check the three tools are available
-cutadapt --version && nextflow -version && python3 --version
+# 4. check every required tool in one go
+scripts/00_check_env.sh
 ```
+
+If anything is missing or too old, install it user-local (no sudo):
+
+```bash
+scripts/00_check_env.sh --install --dry-run   # preview
+scripts/00_check_env.sh --install             # do it
+source config/env.sh                          # put it on PATH
+scripts/00_check_env.sh                       # confirm
+```
+
+`source config/env.sh` is needed in **every new shell** (add it to `~/.bashrc` to
+make it permanent). Singularity cannot be installed without root — if it is
+missing, try `module load singularity` or ask your admin.
 
 Set `FASTQ=` to your raw read directory so you can paste the rest verbatim:
 
@@ -181,6 +194,8 @@ in the README shows the arithmetic.
 
 | Need | Command |
 |---|---|
+| Check required tools | `scripts/00_check_env.sh` |
+| Install missing tools | `scripts/00_check_env.sh --install` |
 | Check orientation / primers | `scripts/01_demux_regions.sh --indir $FASTQ --probe` |
 | Redo demux from scratch | add `--force` to step 1 |
 | Keep low-read samples | `--min-reads 0` in step 2 |

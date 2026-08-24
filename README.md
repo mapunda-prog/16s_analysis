@@ -4,6 +4,7 @@ Splits a QIAseq 16S/ITS multiplex library into its 7 primer regions, runs
 nf-core/ampliseq independently on each, and compiles the results back together.
 
 ```
+scripts/00_check_env.sh         check/install required tools
 scripts/01_demux_regions.sh     reads  ->  demux/<REGION>/
 scripts/02_make_samplesheets.py        ->  samplesheets/<REGION>.tsv
 scripts/03_run_ampliseq.sh             ->  results_by_region/<REGION>/
@@ -102,10 +103,26 @@ docker rm qs
 |------|---------|-------|
 | `cutadapt` ≥ 3.4 | step 01 | needs `--pair-adapters`; developed against 5.2 |
 | `python3` ≥ 3.6 | steps 01, 02, 04 | standard library only, no pandas |
-| `nextflow` | step 03 | plus Singularity or Docker |
+| `nextflow` ≥ 24.04.2 | step 03 | hard requirement of ampliseq 2.14.0 |
+| `java` 17+ | step 03 | required by Nextflow 24.x |
+| Singularity / Docker | step 03 | container engine for `-profile` |
+
+Check all of it at once, and install what is missing without sudo:
+
+```bash
+scripts/00_check_env.sh                 # report only, changes nothing
+scripts/00_check_env.sh --install       # user-local install, then: source config/env.sh
+```
+
+It verifies versions rather than mere presence (Nextflow 24.04.2 is a hard
+requirement of ampliseq 2.14.0, and Nextflow 24.x itself needs Java 17+), checks
+that `NXF_SINGULARITY_CACHEDIR` is set and writable, warns on low disk, and exits
+non-zero if anything is unresolved so it can be chained in a setup script.
+Singularity/apptainer need root and are reported, not installed — on a shared
+server they normally come from `module load singularity`.
 
 Steps 01/02/04 are plain bash + Python and run anywhere; only step 03 needs the
-Nextflow stack.
+Nextflow stack, so a missing Nextflow does not block demultiplexing.
 
 ---
 
