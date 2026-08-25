@@ -11,10 +11,11 @@ Both are keyed by enrolment_id_or, e.g. "MLTP-AIC-125", with no BL/SW suffix --
 that only appears once a patient's fastq is demultiplexed and the sample ID
 gets a specimen-type suffix (AIC125BL, AIC125SW) if both specimens were drawn.
 
-This script maps each *sequenced* sample ID (as it appears in
-results*/overall_summary.tsv, or a samplesheet you point it at) back to its
-enrolment code, picks the matching panel by specimen-type suffix (BL -> AFI,
-SW -> ARI), and writes one combined row per sample to config/metadata.tsv.
+This script maps each *sequenced* sample ID -- the union of sampleID across
+every samplesheets/<REGION>.tsv, since a sample dropped from one region for
+low reads can still be running in another -- back to its enrolment code,
+picks the matching panel by specimen-type suffix (BL -> AFI, SW -> ARI), and
+writes one combined row per sample to config/metadata.tsv.
 
 Ambiguous cases (an enrolment has both panels but the sequenced sample ID has
 no BL/SW suffix to tell them apart -- duplicate/re-run IDs like AIC057a/057b
@@ -28,7 +29,8 @@ in the pipeline needs pandas.
 
 Usage:
     python3 scripts/build_metadata.py
-    python3 scripts/build_metadata.py --sample-ids-file samplesheets/V3V4.tsv
+    python3 scripts/build_metadata.py --samplesheet-dir /path/to/samplesheets
+    python3 scripts/build_metadata.py --sample-ids-file results/overall_summary.tsv
     python3 scripts/build_metadata.py --afi metadata/AFI.dta --ari metadata/ARI.dta
 """
 
@@ -42,10 +44,8 @@ import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT = os.path.dirname(HERE)
-
-# sample IDs that are sequencing controls, not patient specimens -- expected
-# to have no clinical metadata, so they're not reported as unmatched.
-CONTROL_IDS = {"NTC", "PC1NPHL", "PC2EXT", "Undetermined"}
+sys.path.insert(0, os.path.join(HERE, "lib"))
+from samplesheets import collect_sample_ids, is_control  # noqa: E402
 
 SHARED_COLUMNS = [
     "recruitment_month", "sex", "hf_name", "location", "agegroup", "seasonal",
@@ -72,13 +72,16 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--afi", default=os.path.join(PROJECT, "metadata", "Meta data for AFI_submit.dta"))
     ap.add_argument("--ari", default=os.path.join(PROJECT, "metadata", "Meta data for ARI_submit.dta"))
+    ap.add_argument("--samplesheet-dir", default=os.path.join(PROJECT, "samplesheets"),
+                    help="union of sampleID across every <REGION>.tsv here "
+                         "[default: samplesheets]")
     ap.add_argument("--sample-ids-file", default=None,
-                    help="TSV with a sampleID/sample column to convert "
-                         "[default: results*/overall_summary.tsv, sample column]")
+                    help="TSV with a sampleID/sample column to convert instead "
+                         "of --samplesheet-dir, e.g. results*/overall_summary.tsv")
     ap.add_argument("--out", default=os.path.join(PROJECT, "config", "metadata.tsv"))
     args = ap.parse_args()
 
-    sample_ids = read_sample_ids(args.sample_ids_file)
+    sample_ids = read_sample_ids(args.sample_ids_file, args.samplesheet_dir)
     afi = load_panel(args.afi)
     ari = load_panel(args.ari)
     site_codes = {site_of(e) for e in list(afi) + list(ari)}
@@ -89,7 +92,7 @@ def main():
     for sid in sample_ids:
         parsed = parse_sample_id(sid, site_codes)
         if parsed is None:
-            (controls if sid in CONTROL_IDS else no_metadata).append(sid)
+            (controls if is_control(sid) else no_metadata).append(sid)
             rows.append(blank_row(sid))
             continue
 
@@ -145,6 +148,14 @@ def site_of(enrolment_id_or):
 _SID_RE = None
 
 
+# specimen-type suffix seen on sequenced sample IDs -> which panel it picks.
+# Two conventions coexist in the data: "BL"/"SW" (e.g. AIC125BL) and the
+# shorter "B"/"S" (e.g. KWJ004B). Lowercase "a"/"b" (AIC057a/057b) is a
+# different thing -- a replicate/rerun letter, not a specimen marker -- so
+# only the uppercase single-letter form is treated as specimen type here.
+SPECIMEN_SUFFIXES = {"BL": "BL", "SW": "SW", "B": "BL", "S": "SW"}
+
+
 def parse_sample_id(sid, site_codes):
     """'AIC125BL' -> ('MLTP-AIC-125', 'BL'); 'AIC057a' -> (..., None); None if
     sid isn't a <site><digits><suffix> pattern with a known site code."""
@@ -157,7 +168,7 @@ def parse_sample_id(sid, site_codes):
     site, num, suffix = m.group(1), m.group(2), m.group(3)
     if site not in site_codes:
         return None
-    specimen = suffix if suffix in ("BL", "SW") else None
+    specimen = SPECIMEN_SUFFIXES.get(suffix)
     return f"MLTP-{site}-{num}", specimen
 
 
@@ -200,7 +211,9 @@ def write_metadata(rows, out_path):
             w.writerow({k: row.get(k, "") for k in header})
 
 
-def read_sample_ids(path):
+def read_sample_ids(path, samplesheet_dir):
+    if path is None and os.path.isdir(samplesheet_dir):
+        return sorted(collect_sample_ids(samplesheet_dir))
     if path is None:
         path = find_default_summary()
     col = None
