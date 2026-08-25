@@ -20,7 +20,9 @@
 #   python3   >= 3.6      steps 01, 02, 04   (standard library only)
 #   cutadapt  >= 3.4      step 01            (needs --pair-adapters)
 #   nextflow  >= 24.04.2  step 03            (hard requirement of ampliseq 2.14.0)
-#   java      >= 17       step 03            (required by Nextflow 24.x)
+#   java      17-22       step 03            (required by Nextflow 24.x; its launcher
+#                                             rejects anything newer than 22, so an
+#                                             unpinned "latest" JDK install breaks it)
 #   container engine      step 03            singularity OR apptainer OR docker
 #   gzip, awk, curl, tar  steps 01, 04
 #
@@ -60,6 +62,7 @@ MIN_PYTHON=3.6
 MIN_CUTADAPT=3.4
 MIN_NEXTFLOW=24.04.2
 MIN_JAVA=17
+MAX_JAVA=22  # Nextflow's launcher hard-rejects anything newer than this
 
 # ---------------------------------------------------------------------------- #
 # helpers
@@ -114,6 +117,36 @@ check_tool() {
     return 0
 }
 
+# java needs both a floor and a ceiling: Nextflow's launcher script hard-rejects
+# any Java newer than $MAX_JAVA, so a plain ">= MIN_JAVA" install can pick the
+# latest JDK from conda/apt and silently break step 03.
+check_java() {
+    local path found
+    path="$(command -v java 2>/dev/null)"
+    if [[ -z "$path" ]]; then
+        record MISSING java "-" "$MIN_JAVA-$MAX_JAVA" "not on PATH"
+        N_MISSING=$((N_MISSING+1)); MISSING_TOOLS+=("java")
+        return 1
+    fi
+    found="$(java -version 2>&1 | first_version)"
+    if [[ -z "$found" ]]; then
+        record OK java "present" "$MIN_JAVA-$MAX_JAVA" "$path"
+        return 0
+    fi
+    if ! version_ge "$found" "$MIN_JAVA"; then
+        record OLD java "$found" "$MIN_JAVA-$MAX_JAVA" "$path (too old)"
+        N_OLD=$((N_OLD+1)); MISSING_TOOLS+=("java")
+        return 1
+    fi
+    if ! version_ge "$MAX_JAVA" "$found"; then
+        record OLD java "$found" "$MIN_JAVA-$MAX_JAVA" "$path (too new -- Nextflow's launcher caps at Java $MAX_JAVA)"
+        N_OLD=$((N_OLD+1)); MISSING_TOOLS+=("java")
+        return 1
+    fi
+    record OK java "$found" "$MIN_JAVA-$MAX_JAVA" "$path"
+    return 0
+}
+
 # ---------------------------------------------------------------------------- #
 # run the checks
 # ---------------------------------------------------------------------------- #
@@ -126,7 +159,7 @@ echo
 check_tool python3  "$MIN_PYTHON"   python3 --version
 check_tool cutadapt "$MIN_CUTADAPT" cutadapt --version
 check_tool nextflow "$MIN_NEXTFLOW" nextflow -v
-check_tool java     "$MIN_JAVA"     java -version
+check_java
 
 # container engine: any one of the three satisfies step 03
 ENGINE=""
@@ -298,7 +331,7 @@ if [[ "$METHOD" == "conda" ]]; then
     PKGS=()
     needs cutadapt && PKGS+=("cutadapt>=$MIN_CUTADAPT")
     needs nextflow && PKGS+=("nextflow>=$MIN_NEXTFLOW")
-    needs java     && PKGS+=("openjdk>=$MIN_JAVA")
+    needs java     && PKGS+=("openjdk>=$MIN_JAVA,<=$MAX_JAVA")
     # nextflow from conda pulls its own JDK, but be explicit when java is the problem
     if [[ ${#PKGS[@]} -eq 0 ]]; then
         echo "  nothing conda can fix here (see the notes above)."
