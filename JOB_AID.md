@@ -206,6 +206,7 @@ in the README shows the arithmetic.
 | Add diversity analysis | `scripts/03_run_ampliseq.sh --all --extra "--metadata config/metadata.tsv"` |
 | Alpha/beta diversity by specimen type and site (after step 4) | `python3 scripts/05_diversity_analysis.py` |
 | Taxa barplots per region (after step 4) | `python3 scripts/06_taxa_barplots.py --regions V1V2 V2V3 ...` |
+| Diversity boxplots per region (after step 5) | `python3 scripts/07_diversity_boxplots.py` |
 | Bacteria only (drop host/mito) | add `--extra "--filter_ssu bac"` to step 3 |
 
 **Edit `config/regions.tsv` only** — `config/primers_*.fasta` are regenerated

@@ -261,6 +261,14 @@ a PERMANOVA-style permutation test per region × grouping variable. See the
 `README.md` written into that output directory for the full method and headline
 result.
 
+```bash
+python3 scripts/07_diversity_boxplots.py
+```
+
+Needs matplotlib. Reads `alpha_diversity_per_sample.tsv` and writes a 4-panel
+boxplot (richness/Shannon/Simpson/Pielou) per region × grouping variable into
+`alpha_beta_diversity/boxplots/`, each group annotated with its sample count.
+
 ### 6. Taxa barplots (local substitute for QIIME2's own)
 
 ```bash
