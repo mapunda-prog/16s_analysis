@@ -15,6 +15,14 @@ Reads results_by_region/<REGION>/ and writes to compiled/:
                                 regions detected it -- the cross-region view
   demux_summary.tsv             copy of the step 01 assignment counts, if present
 
+ASVs classified as Mitochondria or Chloroplast (host/plant DNA, not target
+bacteria) are dropped from every output here -- ASV_table.tsv is upstream of
+ampliseq's own --exclude_taxa mitochondria,chloroplast filter, which only
+applies to the QIIME2 abundance tables, so without this these compiled files
+disagree with the pipeline's own filtered results. This matters most for
+blood-derived specimens, where host mitochondrial DNA can dominate a sample's
+reads entirely.
+
 Pure standard library: no pandas needed on the analysis server.
 
 Usage:
@@ -31,6 +39,15 @@ import statistics
 import sys
 
 TAX_RANKS = ["Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"]
+
+# ampliseq's own default (--exclude_taxa mitochondria,chloroplast) applies only
+# to the QIIME2 abundance tables; ASV_table.tsv is upstream of that filter, so
+# we re-apply the same rule here to keep the compiled tables consistent.
+HOST_CONTAMINANT_TERMS = ("mitochondria", "chloroplast")
+
+
+def is_host_contaminant(lineage_full):
+    return any(term in val.lower() for val in lineage_full for term in HOST_CONTAMINANT_TERMS)
 
 
 def read_tsv(path):
@@ -140,10 +157,16 @@ def main():
                 hdr, rows = read_tsv(asv_table)
                 samples = hdr[1:]
                 genus_acc = {}   # (sample, lineage) -> count
+                n_contaminant_asv = 0
+                n_contaminant_reads = 0
                 for row in rows:
                     asv = row[0]
-                    n_asv += 1
                     lineage_full = tax.get(asv, [""] * len(TAX_RANKS))
+                    if is_host_contaminant(lineage_full):
+                        n_contaminant_asv += 1
+                        n_contaminant_reads += sum(_int(v) for v in row[1:])
+                        continue
+                    n_asv += 1
                     # genus-level lineage, truncated at the first unassigned rank
                     parts = []
                     for val in lineage_full[:6]:
@@ -162,6 +185,9 @@ def main():
                         genus_acc[key] = genus_acc.get(key, 0) + c
                 for (sample, lineage), c in genus_acc.items():
                     genus_rows.append((region, sample, lineage, c))
+                if n_contaminant_asv:
+                    print(f"  {region}: excluded {n_contaminant_asv} mitochondria/chloroplast "
+                          f"ASV(s), {n_contaminant_reads} reads")
 
             qc_rows.append({
                 "region": region,

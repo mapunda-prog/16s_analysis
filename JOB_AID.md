@@ -204,6 +204,7 @@ in the README shows the arithmetic.
 | Rebuild metadata.tsv from the AFI/ARI .dta files | `python3 scripts/build_metadata.py` |
 | Check metadata covers every sample before running diversity | `python3 scripts/check_metadata.py` |
 | Add diversity analysis | `scripts/03_run_ampliseq.sh --all --extra "--metadata config/metadata.tsv"` |
+| Alpha/beta diversity by specimen type and site (after step 4) | `python3 scripts/05_diversity_analysis.py` |
 | Bacteria only (drop host/mito) | add `--extra "--filter_ssu bac"` to step 3 |
 
 **Edit `config/regions.tsv` only** — `config/primers_*.fasta` are regenerated

@@ -241,6 +241,26 @@ python3 scripts/04_compile_results.py
 several regions are solid; taxa seen by only one are either that region's genuine
 extra resolution or an artifact, and the column tells you which to check.
 
+ASVs classified as Mitochondria or Chloroplast (host/plant DNA) are excluded
+from every table here, mirroring ampliseq's own `--exclude_taxa` default --
+this matters most for blood specimens, where host mtDNA can otherwise
+dominate a sample's reads entirely.
+
+### 5. Alpha/beta diversity by specimen type and collection site
+
+```bash
+python3 scripts/05_diversity_analysis.py --asv-long compiled/asv_long.tsv.gz
+```
+
+Needs numpy (run locally, like `build_metadata.py`). Reads `compiled/asv_long.tsv.gz`
+and `config/metadata.tsv`, drops samples below 1,000 reads per region, rarefies
+the rest to that region's lowest surviving depth, and writes to
+`alpha_beta_diversity/`: per-sample richness/Shannon/Simpson/Pielou, summaries
+by `type_ofsample` and `hf_name`, a Bray-Curtis distance matrix per region, and
+a PERMANOVA-style permutation test per region × grouping variable. See the
+`README.md` written into that output directory for the full method and headline
+result.
+
 ---
 
 ## Tuning truncation
