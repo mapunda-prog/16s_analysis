@@ -261,6 +261,20 @@ a PERMANOVA-style permutation test per region × grouping variable. See the
 `README.md` written into that output directory for the full method and headline
 result.
 
+### 6. Taxa barplots (local substitute for QIIME2's own)
+
+```bash
+python3 scripts/06_taxa_barplots.py --regions V1V2 V2V3 V3V4 V4V5 V7V9
+```
+
+Needs matplotlib. Stacked genus-composition PNG per requested region, built
+from `compiled/genus_counts_by_region.tsv` -- useful on its own, and a
+substitute when a region's `QIIME2_BARPLOT` process didn't produce one (as
+happened for ITS/V5V7 in the first full run). Controls are excluded from the
+plot; the top 8 genera get a fixed color across every region so the same
+genus reads as the same color everywhere. See the `README.md` written into
+`taxa_barplots/` for the full method.
+
 ---
 
 ## Tuning truncation
