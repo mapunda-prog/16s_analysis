@@ -21,6 +21,7 @@ scripts/08_export_for_biostatistician.py  per-region qiime2 rel-abundance tables
 scripts/09_merge_organisms_with_metadata.py  organisms_by_sample/ + config/metadata.tsv  ->  organisms_by_sample/*_with_metadata.tsv
 scripts/10_samples_missing_results.py     metadata vs organisms_by_sample/  ->  console report
 scripts/11_export_by_rank.py           per-region dada2 ASV+tax tables (incl. ITS)  ->  organisms_by_sample/{family,genus,species}_level.tsv
+scripts/12_rarefaction_plots.py        per-region dada2 ASV+tax tables  ->  alpha_beta_diversity/rarefaction_curves/
 ```
 
 ---
@@ -118,12 +119,12 @@ docker rm qs
 | `java` 17+ | step 03 | required by Nextflow 24.x |
 | Singularity / Docker | step 03 | container engine for `-profile` |
 
-Steps 5–11 are optional, local-analyst-side scripts (run on your own machine
+Steps 5–12 are optional, local-analyst-side scripts (run on your own machine
 against a downloaded `results_by_region/`/`compiled/`, not on the server).
 Most need one extra package not covered by `00_check_env.sh`: `pandas`
 (`build_metadata.py`), `numpy` (`05_diversity_analysis.py`), `matplotlib`
-(`06_taxa_barplots.py`, `07_diversity_boxplots.py`). Steps 8-11 (and
-`check_metadata.py`) are pure standard library.
+(`06_taxa_barplots.py`, `07_diversity_boxplots.py`, `12_rarefaction_plots.py`).
+Steps 8-11 (and `check_metadata.py`) are pure standard library.
 
 Check all of it at once, and install what is missing without sudo:
 
@@ -362,6 +363,22 @@ QIIME2's own `taxa collapse`. Writes `family_level.tsv`, `genus_level.tsv`,
 `species_level.tsv` into `organisms_by_sample/`, controls included. See
 that directory's `README.md` for the full column reference.
 
+### 12. Rarefaction curves
+
+```bash
+python3 scripts/12_rarefaction_plots.py --regions V3V4 V4V5 ITS
+```
+
+Needs matplotlib. Expected ASV richness vs. sequencing depth, one line per
+sample, using Hurlbert's exact rarefaction formula (deterministic, no
+repeated subsampling needed). Lines are colored by specimen type, same fixed
+mapping as step 7's boxplots. A dashed reference line marks the depth step
+5 rarefied to for that region (lowest depth among samples with >=1,000
+reads); no line is drawn if no sample clears that bar (as for ITS, which is
+also why step 5 skips ITS entirely -- these curves make that visually
+obvious). Writes `<REGION>_rarefaction.png` into
+`alpha_beta_diversity/rarefaction_curves/`.
+
 ---
 
 ## Tuning truncation
@@ -479,7 +496,7 @@ scripts/lib/taxonomy.py     shared: host-contaminant filtering, reading a
 demux/, samplesheets/, results_by_region/, work/, logs/, compiled/
                             generated (steps 0-4)
 alpha_beta_diversity/, taxa_barplots/, organisms_by_sample/
-                            generated (steps 5-11, local-analyst-side only)
+                            generated (steps 5-12, local-analyst-side only)
 ```
 
 `config/primers_*.fasta` are rewritten from `config/regions.tsv` at the start of
