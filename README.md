@@ -18,6 +18,7 @@ scripts/05_diversity_analysis.py       compiled/ + metadata  ->  alpha_beta_dive
 scripts/06_taxa_barplots.py            compiled/genus_counts_by_region.tsv  ->  taxa_barplots/
 scripts/07_diversity_boxplots.py       alpha_beta_diversity/  ->  alpha_beta_diversity/boxplots/
 scripts/08_export_for_biostatistician.py  per-region qiime2 rel-abundance tables  ->  organisms_by_sample/
+scripts/09_merge_organisms_with_metadata.py  organisms_by_sample/ + config/metadata.tsv  ->  organisms_by_sample/*_with_metadata.tsv
 ```
 
 ---
@@ -115,7 +116,7 @@ docker rm qs
 | `java` 17+ | step 03 | required by Nextflow 24.x |
 | Singularity / Docker | step 03 | container engine for `-profile` |
 
-Steps 5–8 are optional, local-analyst-side scripts (run on your own machine
+Steps 5–9 are optional, local-analyst-side scripts (run on your own machine
 against a downloaded `results_by_region/`/`compiled/`, not on the server).
 Most need one extra package not covered by `00_check_env.sh`: `pandas`
 (`build_metadata.py`), `numpy` (`05_diversity_analysis.py`), `matplotlib`
@@ -316,6 +317,19 @@ one tidy row per sample × region × detected organism, written to
 complete handoff. See the `README.md` written into that output directory
 for the full column reference.
 
+### 9. Join the organism export with clinical metadata
+
+```bash
+python3 scripts/09_merge_organisms_with_metadata.py
+```
+
+Pure standard library. Left-joins step 8's output with `config/metadata.tsv`
+on `sample_id`, adding every AFI/ARI demographic and pathogen-panel column
+so downstream analysis can cross bacterial detections against clinical
+results directly. Writes `organisms_by_sample/organisms_by_sample_with_metadata.tsv`
+and warns if any sample has no metadata row. See that output directory's
+`README.md` for column details and the ambiguous-specimen caveat.
+
 ---
 
 ## Tuning truncation
@@ -430,7 +444,7 @@ scripts/lib/samplesheets.py shared: collect sample IDs from samplesheets/,
 demux/, samplesheets/, results_by_region/, work/, logs/, compiled/
                             generated (steps 0-4)
 alpha_beta_diversity/, taxa_barplots/, organisms_by_sample/
-                            generated (steps 5-8, local-analyst-side only)
+                            generated (steps 5-9, local-analyst-side only)
 ```
 
 `config/primers_*.fasta` are rewritten from `config/regions.tsv` at the start of
