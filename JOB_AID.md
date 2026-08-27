@@ -207,6 +207,7 @@ in the README shows the arithmetic.
 | Alpha/beta diversity by specimen type and site (after step 4) | `python3 scripts/05_diversity_analysis.py` |
 | Taxa barplots per region (after step 4) | `python3 scripts/06_taxa_barplots.py --regions V1V2 V2V3 ...` |
 | Diversity boxplots per region (after step 5) | `python3 scripts/07_diversity_boxplots.py` |
+| Per-sample organism export for biostatistics (after step 3) | `python3 scripts/08_export_for_biostatistician.py --regions V3V4 V4V5` |
 | Bacteria only (drop host/mito) | add `--extra "--filter_ssu bac"` to step 3 |
 
 **Edit `config/regions.tsv` only** — `config/primers_*.fasta` are regenerated

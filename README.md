@@ -17,6 +17,7 @@ scripts/check_metadata.py       config/metadata.tsv vs samplesheets, pre-flight 
 scripts/05_diversity_analysis.py       compiled/ + metadata  ->  alpha_beta_diversity/
 scripts/06_taxa_barplots.py            compiled/genus_counts_by_region.tsv  ->  taxa_barplots/
 scripts/07_diversity_boxplots.py       alpha_beta_diversity/  ->  alpha_beta_diversity/boxplots/
+scripts/08_export_for_biostatistician.py  per-region qiime2 rel-abundance tables  ->  organisms_by_sample/
 ```
 
 ---
@@ -114,11 +115,12 @@ docker rm qs
 | `java` 17+ | step 03 | required by Nextflow 24.x |
 | Singularity / Docker | step 03 | container engine for `-profile` |
 
-Steps 5–7 are optional, local-analyst-side scripts (run on your own machine
-against a downloaded `results_by_region/`/`compiled/`, not on the server) and
-each needs one extra package not covered by `00_check_env.sh`: `pandas`
+Steps 5–8 are optional, local-analyst-side scripts (run on your own machine
+against a downloaded `results_by_region/`/`compiled/`, not on the server).
+Most need one extra package not covered by `00_check_env.sh`: `pandas`
 (`build_metadata.py`), `numpy` (`05_diversity_analysis.py`), `matplotlib`
-(`06_taxa_barplots.py`, `07_diversity_boxplots.py`).
+(`06_taxa_barplots.py`, `07_diversity_boxplots.py`). Step 8 is pure standard
+library.
 
 Check all of it at once, and install what is missing without sudo:
 
@@ -299,6 +301,21 @@ writes a 4-panel boxplot (richness/Shannon/Simpson/Pielou) per region ×
 grouping variable into `alpha_beta_diversity/boxplots/`, each group
 annotated with its sample count.
 
+### 8. Per-sample export for downstream biostatistics
+
+```bash
+python3 scripts/08_export_for_biostatistician.py --regions V3V4 V4V5
+```
+
+Pure standard library. Reshapes the requested regions' own
+`qiime2/rel_abundance_tables/rel-table-ASV_with-DADA2-tax.tsv` (ampliseq's
+native per-ASV taxonomy + classifier confidence + relative abundance) into
+one tidy row per sample × region × detected organism, written to
+`organisms_by_sample/organisms_by_sample.tsv`. Unlike step 6, controls are
+**included** (flagged via `is_control`), not filtered -- this is meant as a
+complete handoff. See the `README.md` written into that output directory
+for the full column reference.
+
 ---
 
 ## Tuning truncation
@@ -412,8 +429,8 @@ scripts/lib/samplesheets.py shared: collect sample IDs from samplesheets/,
                             read excluded_samples.tsv, control-ID detection
 demux/, samplesheets/, results_by_region/, work/, logs/, compiled/
                             generated (steps 0-4)
-alpha_beta_diversity/, taxa_barplots/
-                            generated (steps 5-7, local-analyst-side only)
+alpha_beta_diversity/, taxa_barplots/, organisms_by_sample/
+                            generated (steps 5-8, local-analyst-side only)
 ```
 
 `config/primers_*.fasta` are rewritten from `config/regions.tsv` at the start of
