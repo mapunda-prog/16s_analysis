@@ -209,6 +209,7 @@ in the README shows the arithmetic.
 | Diversity boxplots per region (after step 5) | `python3 scripts/07_diversity_boxplots.py` |
 | Per-sample organism export for biostatistics (after step 3) | `python3 scripts/08_export_for_biostatistician.py --regions V3V4 V4V5` |
 | Join that export with AFI/ARI clinical metadata (after step 8) | `python3 scripts/09_merge_organisms_with_metadata.py` |
+| Samples with metadata but no results, and why (after step 8) | `python3 scripts/10_samples_missing_results.py --regions V3V4 V4V5` |
 | Bacteria only (drop host/mito) | add `--extra "--filter_ssu bac"` to step 3 |
 
 **Edit `config/regions.tsv` only** — `config/primers_*.fasta` are regenerated
