@@ -20,6 +20,7 @@ scripts/07_diversity_boxplots.py       alpha_beta_diversity/  ->  alpha_beta_div
 scripts/08_export_for_biostatistician.py  per-region qiime2 rel-abundance tables  ->  organisms_by_sample/
 scripts/09_merge_organisms_with_metadata.py  organisms_by_sample/ + config/metadata.tsv  ->  organisms_by_sample/*_with_metadata.tsv
 scripts/10_samples_missing_results.py     metadata vs organisms_by_sample/  ->  console report
+scripts/11_export_by_rank.py           per-region dada2 ASV+tax tables (incl. ITS)  ->  organisms_by_sample/{family,genus,species}_level.tsv
 ```
 
 ---
@@ -117,11 +118,11 @@ docker rm qs
 | `java` 17+ | step 03 | required by Nextflow 24.x |
 | Singularity / Docker | step 03 | container engine for `-profile` |
 
-Steps 5–10 are optional, local-analyst-side scripts (run on your own machine
+Steps 5–11 are optional, local-analyst-side scripts (run on your own machine
 against a downloaded `results_by_region/`/`compiled/`, not on the server).
 Most need one extra package not covered by `00_check_env.sh`: `pandas`
 (`build_metadata.py`), `numpy` (`05_diversity_analysis.py`), `matplotlib`
-(`06_taxa_barplots.py`, `07_diversity_boxplots.py`). Steps 8-10 (and
+(`06_taxa_barplots.py`, `07_diversity_boxplots.py`). Steps 8-11 (and
 `check_metadata.py`) are pure standard library.
 
 Check all of it at once, and install what is missing without sudo:
@@ -344,6 +345,23 @@ with real AFI/ARI clinical data (not a blank control row, not one of the
 kept but DADA2 produced zero surviving ASVs (a merge/truncation failure
 for that specific sample), or never sequenced in that region at all.
 
+### 11. Rank-collapsed export (family / genus / species), including ITS
+
+```bash
+python3 scripts/11_export_by_rank.py --regions V3V4 V4V5 ITS --ranks family genus species
+```
+
+Pure standard library. Unlike step 8 (ASV-level, V3V4/V4V5 only, built from
+ampliseq's merged QIIME2 table), this reads each region's own
+`dada2/ASV_table.tsv` + `dada2/ASV_tax_species.<ref>.tsv` directly, so it
+works the same way for ITS (UNITE-fungi reference, no merged QIIME2 table of
+its own) as for the SILVA regions. ASVs sharing the same lineage up to the
+named rank are merged (relative abundance summed, confidence
+abundance-weighted, `n_asvs_collapsed` reported) -- the same semantics as
+QIIME2's own `taxa collapse`. Writes `family_level.tsv`, `genus_level.tsv`,
+`species_level.tsv` into `organisms_by_sample/`, controls included. See
+that directory's `README.md` for the full column reference.
+
 ---
 
 ## Tuning truncation
@@ -455,10 +473,13 @@ reference/                  QIAGEN's expanded primer table (provenance)
 scripts/lib/regions.py      shared config parsing, ID cleaning, FASTQ pairing
 scripts/lib/samplesheets.py shared: collect sample IDs from samplesheets/,
                             read excluded_samples.tsv, control-ID detection
+scripts/lib/taxonomy.py     shared: host-contaminant filtering, reading a
+                            region's dada2 ASV table + taxonomy uniformly
+                            (SILVA or UNITE-fungi)
 demux/, samplesheets/, results_by_region/, work/, logs/, compiled/
                             generated (steps 0-4)
 alpha_beta_diversity/, taxa_barplots/, organisms_by_sample/
-                            generated (steps 5-10, local-analyst-side only)
+                            generated (steps 5-11, local-analyst-side only)
 ```
 
 `config/primers_*.fasta` are rewritten from `config/regions.tsv` at the start of

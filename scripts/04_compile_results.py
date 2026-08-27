@@ -38,16 +38,10 @@ import os
 import statistics
 import sys
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib"))
+from taxonomy import is_host_contaminant  # noqa: E402
+
 TAX_RANKS = ["Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"]
-
-# ampliseq's own default (--exclude_taxa mitochondria,chloroplast) applies only
-# to the QIIME2 abundance tables; ASV_table.tsv is upstream of that filter, so
-# we re-apply the same rule here to keep the compiled tables consistent.
-HOST_CONTAMINANT_TERMS = ("mitochondria", "chloroplast")
-
-
-def is_host_contaminant(lineage_full):
-    return any(term in val.lower() for val in lineage_full for term in HOST_CONTAMINANT_TERMS)
 
 
 def read_tsv(path):
