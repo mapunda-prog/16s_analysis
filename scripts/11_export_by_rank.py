@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Step 11 -- per-sample organism detections collapsed to a fixed taxonomic
-rank (family, genus, or species), across multiple regions including ITS.
+rank (phylum, family, genus, or species), across multiple regions
+including ITS.
 
 Unlike 08_export_for_biostatistician.py (ASV-level, V3V4/V4V5 only, built
 from ampliseq's merged QIIME2 rel-abundance-with-taxonomy table), this reads
@@ -21,8 +22,8 @@ merged into one row per sample x region:
     summary, not a native score -- documented here and in the output README)
   - n_asvs_collapsed: how many ASVs went into this row, for transparency
 
-Writes one file per rank into --outdir: family_level.tsv, genus_level.tsv,
-species_level.tsv. Controls (NTC, PC1*, PC2*) are INCLUDED (flagged via
+Writes one file per rank into --outdir: phylum_level.tsv, family_level.tsv,
+genus_level.tsv, species_level.tsv. Controls (NTC, PC1*, PC2*) are INCLUDED (flagged via
 is_control), matching 08_export_for_biostatistician.py's convention for a
 complete handoff.
 
@@ -30,7 +31,7 @@ Pure standard library.
 
 Usage:
     python3 scripts/11_export_by_rank.py
-    python3 scripts/11_export_by_rank.py --regions V3V4 V4V5 ITS --ranks family genus species
+    python3 scripts/11_export_by_rank.py --regions V3V4 V4V5 ITS --ranks phylum family genus species
 """
 
 import argparse
@@ -45,6 +46,7 @@ from samplesheets import is_control  # noqa: E402
 from taxonomy import load_region_asvs  # noqa: E402
 
 RANK_COLUMNS = {
+    "phylum": ["Kingdom", "Phylum"],
     "family": ["Kingdom", "Phylum", "Class", "Order", "Family"],
     "genus": ["Kingdom", "Phylum", "Class", "Order", "Family", "Genus"],
     "species": ["Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species", "Species_exact"],
@@ -56,7 +58,7 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--results-dir", default=os.path.join(PROJECT, "results_by_region"))
     ap.add_argument("--regions", nargs="+", default=["V3V4", "V4V5", "ITS"])
-    ap.add_argument("--ranks", nargs="+", default=["family", "genus", "species"],
+    ap.add_argument("--ranks", nargs="+", default=["phylum", "family", "genus", "species"],
                     choices=list(RANK_COLUMNS))
     ap.add_argument("--outdir", default=os.path.join(PROJECT, "organisms_by_sample"))
     args = ap.parse_args()

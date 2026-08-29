@@ -20,7 +20,7 @@ scripts/07_diversity_boxplots.py       alpha_beta_diversity/  ->  alpha_beta_div
 scripts/08_export_for_biostatistician.py  per-region qiime2 rel-abundance tables  ->  organisms_by_sample/
 scripts/09_merge_organisms_with_metadata.py  organisms_by_sample/ + config/metadata.tsv  ->  organisms_by_sample/*_with_metadata.tsv
 scripts/10_samples_missing_results.py     metadata vs organisms_by_sample/  ->  console report
-scripts/11_export_by_rank.py           per-region dada2 ASV+tax tables (incl. ITS)  ->  organisms_by_sample/{family,genus,species}_level.tsv
+scripts/11_export_by_rank.py           per-region dada2 ASV+tax tables (incl. ITS)  ->  organisms_by_sample/{phylum,family,genus,species}_level.tsv
 scripts/12_rarefaction_plots.py        per-region dada2 ASV+tax tables  ->  alpha_beta_diversity/rarefaction_curves/
 ```
 
@@ -346,10 +346,10 @@ with real AFI/ARI clinical data (not a blank control row, not one of the
 kept but DADA2 produced zero surviving ASVs (a merge/truncation failure
 for that specific sample), or never sequenced in that region at all.
 
-### 11. Rank-collapsed export (family / genus / species), including ITS
+### 11. Rank-collapsed export (phylum / family / genus / species), including ITS
 
 ```bash
-python3 scripts/11_export_by_rank.py --regions V3V4 V4V5 ITS --ranks family genus species
+python3 scripts/11_export_by_rank.py --regions V3V4 V4V5 ITS --ranks phylum family genus species
 ```
 
 Pure standard library. Unlike step 8 (ASV-level, V3V4/V4V5 only, built from
@@ -359,9 +359,15 @@ works the same way for ITS (UNITE-fungi reference, no merged QIIME2 table of
 its own) as for the SILVA regions. ASVs sharing the same lineage up to the
 named rank are merged (relative abundance summed, confidence
 abundance-weighted, `n_asvs_collapsed` reported) -- the same semantics as
-QIIME2's own `taxa collapse`. Writes `family_level.tsv`, `genus_level.tsv`,
-`species_level.tsv` into `organisms_by_sample/`, controls included. See
-that directory's `README.md` for the full column reference.
+QIIME2's own `taxa collapse`. Writes `phylum_level.tsv`, `family_level.tsv`,
+`genus_level.tsv`, `species_level.tsv` into `organisms_by_sample/`, controls
+included. See that directory's `README.md` for the full column reference.
+
+At phylum the lineage columns are just `Kingdom` + `Phylum`, so the
+`organism` label falls back to `"<name> (phylum)"` — e.g.
+`Pseudomonadota (phylum)` — with `"<name> (kingdom)"` for ASVs classified no
+deeper than kingdom, and `Unclassified` for the rest. Every sample x region
+group still sums to 1.0.
 
 ### 12. Rarefaction curves
 
