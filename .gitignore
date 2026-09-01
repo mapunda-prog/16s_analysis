@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+
+# Clinical / participant-level data — never commit
+metadata/
+config/metadata.tsv
+*.dta
+
+# Run outputs
+results/
+results_by_region/
+organisms_by_sample/
+alpha_beta_diversity/
+taxa_barplots/
+compiled/
+samplesheets/
+
+# Office lock files
+~$*

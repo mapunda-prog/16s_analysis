@@ -10,7 +10,7 @@ One page, in order. Full detail and troubleshooting live in [README.md](README.m
 
 ```bash
 # 1. log in to the analysis server
-ssh lmapunda@<analysis-server> -p <port>
+ssh <user>@<analysis-server> -p <port>   # real values: see local, untracked 16s_server.sh
 
 # 2. go to the run directory
 cd /tank/lmapunda/ARI/16s/Run_20072026
